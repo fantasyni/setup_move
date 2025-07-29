@@ -1,5 +1,6 @@
-var child_process = require("child_process");
-var fs = require("fs");
+import { execSync } from "child_process";
+import { Octokit } from "@octokit/core";
+import fs from "fs";
 
 let cwd = process.cwd();
 let sync_files = ["package.json", "commit.json"];
@@ -14,8 +15,8 @@ function publishPackage() {
     runInDir(cmd, build_dir);
 }
 
-function runInDir(cmd, dir) {
-    child_process.execSync(cmd, {
+function runInDir(cmd: string, dir: string) {
+    execSync(cmd, {
         cwd: dir,
         encoding: "utf-8",
         stdio: 'inherit'
@@ -36,13 +37,11 @@ function bumpNpmVersion() {
 
 async function getPackageVersion() {
     try {
-        var Octokit = require("@octokit/core");
-
-        const octokit = new Octokit.Octokit({
+        const octokit = new Octokit({
             auth: process.env.NODE_AUTH_TOKEN
         })
 
-        let repo = process.env.GITHUB_REPOSITORY;
+        let repo = process.env.GITHUB_REPOSITORY as string;
         let repos = repo.split('/');
 
         let package_name = repos[1];
@@ -83,7 +82,7 @@ function syncPackageJson() {
     });
 }
 
-function writeVersion(version) {
+function writeVersion(version: string) {
     let gh_scripts = `${cwd}/ghscripts`;
 
     if (!fs.existsSync(gh_scripts)) {
@@ -126,13 +125,11 @@ function get_build_dir() {
 
 async function write_last_commit() {
     try {
-        var Octokit = require("@octokit/core");
-
-        const octokit = new Octokit.Octokit({
+        const octokit = new Octokit({
             auth: process.env.NODE_AUTH_TOKEN
         })
 
-        let repo = process.env.GITHUB_REPOSITORY;
+        let repo = process.env.GITHUB_REPOSITORY as string;
         let repos = repo.split('/');
 
         let package_name = repos[1];

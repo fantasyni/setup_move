@@ -6,4 +6,4 @@ branding:
 author: "justin"
 runs:
   using: "node20"
-  main: "publish.js"
+  main: "dist/publish.js"

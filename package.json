@@ -1,0 +1,12 @@
+{
+    "name": "move_packages",
+    "version": "1.0.0",
+    "dependencies": {
+        "@octokit/core": "^7.0.3"
+    },
+    "devDependencies": {
+        "@types/node": "^24.1.0",
+        "tsup": "^8.5.0",
+        "typescript": "^5.8.3"
+    }
+}
