@@ -1186,22 +1186,7 @@ async function write_last_commit() {
     console.error(e);
   }
 }
-function setup() {
-  console.log("setup");
-  let package_json = {
-    "name": "move_packages",
-    "version": "1.0.0",
-    "dependencies": {
-      "@octokit/core": "^7.0.3"
-    }
-  };
-  let package_path = `${cwd}/package.json`;
-  import_fs.default.writeFileSync(package_path, JSON.stringify(package_json, null, 2));
-  console.log("npm install");
-  runInDir(`npm install`, cwd);
-}
 async function main() {
-  setup();
   let version = await getPackageVersion();
   writeVersion(version);
   await write_last_commit();
