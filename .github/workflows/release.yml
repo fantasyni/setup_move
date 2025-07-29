@@ -47,7 +47,7 @@ jobs:
         run: |
           # Get current tag name
           CURRENT_TAG="${GITHUB_REF#refs/tags/}"
-          
+           
           # Create release using GitHub CLI
           gh release create $CURRENT_TAG \
             --title "Release $CURRENT_TAG" \
