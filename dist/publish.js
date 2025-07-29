@@ -1127,8 +1127,11 @@ function writeVersion(version) {
   }
   let gh_package_path = `${cwd}/ghscripts/package.json`;
   let repo = process.env.GITHUB_REPOSITORY;
+  let repos = repo.split("/");
+  let package_name = repos[1].toLowerCase();
+  let org_name = repos[0];
   let package_json = {
-    "name": `@${repo}`,
+    "name": `@${org_name}/${package_name}`,
     "version": "1.0.0",
     "files": [
       "bytecode_modules/*.mv",
@@ -1138,7 +1141,7 @@ function writeVersion(version) {
     ],
     "repository": {
       "type": "git",
-      "url": `git+https://github.com/${repo}.git`
+      "url": `git+https://github.com/${org_name}/${package_name}.git`
     }
   };
   if (version) {

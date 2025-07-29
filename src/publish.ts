@@ -90,9 +90,15 @@ function writeVersion(version: string) {
     }
 
     let gh_package_path = `${cwd}/ghscripts/package.json`;
-    let repo = process.env.GITHUB_REPOSITORY;
+    let repo = process.env.GITHUB_REPOSITORY as string;
+
+    let repos = repo.split('/');
+
+    let package_name = repos[1].toLowerCase();
+    let org_name = repos[0];
+
     let package_json = {
-        "name": `@${repo}`,
+        "name": `@${org_name}/${package_name}`,
         "version": "1.0.0",
         "files": [
             "bytecode_modules/*.mv",
@@ -102,7 +108,7 @@ function writeVersion(version: string) {
         ],
         "repository": {
             "type": "git",
-            "url": `git+https://github.com/${repo}.git`
+            "url": `git+https://github.com/${org_name}/${package_name}.git`
         }
     }
 
@@ -164,25 +170,7 @@ async function write_last_commit() {
 
 }
 
-// function setup() {
-//     console.log("setup")
-//     let package_json = {
-//         "name": "move_packages",
-//         "version": "1.0.0",
-//         "dependencies": {
-//             "@octokit/core": "^7.0.3"
-//         }
-//     };
-
-//     let package_path = `${cwd}/package.json`;
-//     fs.writeFileSync(package_path, JSON.stringify(package_json, null, 2));
-
-//     console.log("npm install")
-//     runInDir(`npm install`, cwd);
-// }
-
 async function main() {
-    // setup();
     let version = await getPackageVersion();
     writeVersion(version);
     await write_last_commit();
