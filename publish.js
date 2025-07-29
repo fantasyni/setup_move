@@ -1,0 +1,197 @@
+var child_process = require("child_process");
+var fs = require("fs");
+
+let cwd = process.cwd();
+let sync_files = ["package.json", "commit.json"];
+
+function publishPackage() {
+    let build_dir = get_build_dir();
+
+    let cmd = `npm publish --registry https://npm.pkg.github.com`;
+
+    console.log(cmd);
+
+    runInDir(cmd, build_dir);
+}
+
+function runInDir(cmd, dir) {
+    child_process.execSync(cmd, {
+        cwd: dir,
+        encoding: "utf-8",
+        stdio: 'inherit'
+    })
+}
+
+function bumpNpmVersion() {
+    console.log("bumpNpmVersion");
+
+    let workflow_path = `${cwd}/ghscripts`;
+
+    let cmd = `npm version patch`;
+
+    console.log(cmd);
+
+    runInDir(cmd, workflow_path);
+}
+
+async function getPackageVersion() {
+    try {
+        var Octokit = require("@octokit/core");
+
+        const octokit = new Octokit.Octokit({
+            auth: process.env.NODE_AUTH_TOKEN
+        })
+
+        let repo = process.env.GITHUB_REPOSITORY;
+        let repos = repo.split('/');
+
+        let package_name = repos[1];
+        let org_name = repos[0];
+
+        let results = await octokit.request('GET /orgs/{org}/packages/{package_type}/{package_name}/versions', {
+            package_type: 'npm',
+            package_name: package_name,
+            org: org_name,
+            per_page: 1,
+        })
+
+        if (results.status == 200 && results.data.length > 0) {
+            return results.data[0].name;
+        }
+
+        return ""
+    } catch (e) {
+        return ""
+    }
+}
+
+function syncPackageJson() {
+    console.log("run packages");
+    console.log(cwd);
+
+    let workflow_path = `${cwd}/ghscripts`;
+
+    let build_dir = get_build_dir();
+
+    sync_files.forEach(function (name) {
+        let from = `${workflow_path}/${name}`;
+        let to = `${build_dir}/${name}`;
+
+        console.log(`copy ${from} to ${to}`);
+
+        fs.copyFileSync(from, to);
+    });
+}
+
+function writeVersion(version) {
+    let gh_scripts = `${cwd}/ghscripts`;
+
+    if (!fs.existsSync(gh_scripts)) {
+        fs.mkdirSync(gh_scripts);
+    }
+
+    let gh_package_path = `${cwd}/ghscripts/package.json`;
+    let repo = process.env.GITHUB_REPOSITORY;
+    let package_json = {
+        "name": `@${repo}`,
+        "version": "1.0.0",
+        "files": [
+            "bytecode_modules/*.mv",
+            "Buildinfo.yaml",
+            "package-metadata.bcs",
+            "commit.json"
+        ],
+        "repository": {
+            "type": "git",
+            "url": `git+https://github.com/${repo}.git`
+        }
+    }
+
+    if (version) {
+        package_json.version = version;
+    }
+
+    console.log(package_json);
+    fs.writeFileSync(gh_package_path, JSON.stringify(package_json, null, 2))
+}
+
+function get_build_dir() {
+    let cwd = process.cwd();
+
+    let build_path = `${cwd}/build`;
+    let build_dirs = fs.readdirSync(build_path);
+    let build_dir = build_dirs[0];
+    return `${build_path}/${build_dir}`;
+}
+
+async function write_last_commit() {
+    try {
+        var Octokit = require("@octokit/core");
+
+        const octokit = new Octokit.Octokit({
+            auth: process.env.NODE_AUTH_TOKEN
+        })
+
+        let repo = process.env.GITHUB_REPOSITORY;
+        let repos = repo.split('/');
+
+        let package_name = repos[1];
+        let org_name = repos[0];
+
+        let results = await octokit.request('GET /repos/{owner}/{repo}/commits', {
+            owner: org_name,
+            repo: package_name,
+            per_page: 1,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        })
+
+        if (results.status == 200 && results.data.length > 0) {
+            let commit_path = `${cwd}/ghscripts/commit.json`;
+
+            let commit = results.data[0];
+
+            let commit_json = {
+                sha: commit.sha,
+                commit: commit.commit
+            }
+
+            console.log("write_last_commit")
+            console.log(commit_json);
+            fs.writeFileSync(commit_path, JSON.stringify(commit_json, null, 2))
+        }
+    } catch (e) {
+        console.error(e);
+    }
+
+}
+
+function setup() {
+    console.log("setup")
+    let package_json = {
+        "name": "move_packages",
+        "version": "1.0.0",
+        "dependencies": {
+            "@octokit/core": "^7.0.3"
+        }
+    };
+
+    let package_path = `${cwd}/package.json`;
+    fs.writeFileSync(package_path, JSON.stringify(package_json, null, 2));
+
+    console.log("npm install")
+    runInDir(`npm install`, cwd);
+}
+
+async function main() {
+    setup();
+    let version = await getPackageVersion();
+    writeVersion(version);
+    await write_last_commit();
+    bumpNpmVersion();
+    syncPackageJson();
+    publishPackage();
+}
+
+main();

@@ -1,0 +1,9 @@
+name: "Setup Move Packages"
+description: "Setup Move Packages to upload to github packages."
+branding:
+  icon: 'arrow-down'
+  color: 'green'
+author: "justin"
+runs:
+  using: "node20"
+  main: "publish.js"
