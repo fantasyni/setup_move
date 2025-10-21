@@ -1094,12 +1094,15 @@ async function getPackageVersion() {
     let repos = repo.split("/");
     let package_name = repos[1];
     let org_name = repos[0];
-    let results = await octokit.request("GET /orgs/{org}/packages/{package_type}/{package_name}/versions", {
-      package_type: "npm",
-      package_name,
-      org: org_name,
-      per_page: 1
-    });
+    let results = await octokit.request(
+      "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
+      {
+        package_type: "npm",
+        package_name,
+        org: org_name,
+        per_page: 1
+      }
+    );
     if (results.status == 200 && results.data.length > 0) {
       return results.data[0].name;
     }
@@ -1131,17 +1134,17 @@ function writeVersion(version) {
   let package_name = repos[1].toLowerCase();
   let org_name = repos[0];
   let package_json = {
-    "name": `@${org_name}/${package_name}`,
-    "version": "1.0.0",
-    "files": [
+    name: `@${org_name}/${package_name}`,
+    version: "1.0.0",
+    files: [
       "bytecode_modules/*.mv",
       "Buildinfo.yaml",
       "package-metadata.bcs",
       "commit.json"
     ],
-    "repository": {
-      "type": "git",
-      "url": `git+https://github.com/${org_name}/${package_name}.git`
+    repository: {
+      type: "git",
+      url: `git+https://github.com/${org_name}/${package_name}.git`
     }
   };
   if (version) {
@@ -1190,6 +1193,10 @@ async function write_last_commit() {
   }
 }
 async function main() {
+  if (process.env.GITHUB_EVENT_NAME == "pull_request") {
+    console.log("pull_request return");
+    return;
+  }
   let version = await getPackageVersion();
   writeVersion(version);
   await write_last_commit();
